@@ -1,0 +1,43 @@
+import paramiko
+import pysftp
+import datetime
+from pathlib import Path
+
+# Configuration du switch FortiNet
+switch_ip = "192.168.1.99"
+switch_username = "admin"
+switch_password = "admin123"
+
+# Configuration du serveur SFTP
+sftp_host = "192.168.152.131"
+sftp_port = 22
+sftp_username = "rahom"
+sftp_password = "rahom"
+current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+backup_filename = f"fortiswitch_backup_{current_datetime}.cfg"
+
+
+
+# Connexion au switch FortiNet
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(switch_ip, username=switch_username, password=switch_password)
+
+# Téléchargement de la configuration
+stdin, stdout, stderr = ssh.exec_command("show full-configuration")
+config = stdout.read().decode("utf-8")
+
+# Déconnexion du switch FortiNet
+ssh.close()
+
+# Connexion au serveur SFTP
+sftp = pysftp.Connection(sftp_host, port=sftp_port, username=sftp_username, password=sftp_password)
+
+# Envoi de la configuration
+with sftp.open(backup_filename, "w") as f:
+    f.write(config)
+
+# Déconnexion du serveur SFTP
+sftp.close()
+
+print("Sauvegarde terminée !")
